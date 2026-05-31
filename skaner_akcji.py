@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import requests
+import plotly.express as px
 
 st.set_page_config(page_title="Lukasz Investment Terminal", layout="wide")
 
