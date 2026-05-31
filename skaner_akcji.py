@@ -709,58 +709,105 @@ with tab1:
             with c4:
                 st.metric("Breadth", f"{result['Breadth %']}%")
 
-            st.markdown("### 📈 Wykresy rynku")
+                        st.markdown("### 📈 Wykresy rynku")
 
             sp500 = yf.download("^GSPC", period="2y", auto_adjust=True, progress=False)
             nasdaq = yf.download("^NDX", period="2y", auto_adjust=True, progress=False)
 
-            col_a, col_b = st.columns(2)
+            if sp500.empty or nasdaq.empty:
+                st.warning("Nie udało się pobrać danych do wykresów S&P500 / Nasdaq.")
+            else:
+                sp500_chart = sp500.reset_index()
+                nasdaq_chart = nasdaq.reset_index()
 
-            with col_a:
-                fig_sp = px.line(
-                    sp500,
-                    y="Close",
-                    title="S&P 500 — 2 lata"
-                )
-                fig_sp.add_scatter(
-                    x=sp500.index,
-                    y=sp500["Close"].rolling(200).mean(),
-                    mode="lines",
-                    name="SMA200"
-                )
-                fig_sp.update_layout(
-                    template="plotly_dark",
-                    height=430,
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(15,23,42,0.85)",
-                    font=dict(color="#E2E8F0"),
-                    title_font=dict(size=22),
-                )
-                fig_sp.update_traces(line=dict(width=3))
-                st.plotly_chart(fig_sp, use_container_width=True)
+                if isinstance(sp500_chart.columns, pd.MultiIndex):
+                    sp500_chart.columns = [col[0] for col in sp500_chart.columns]
 
-            with col_b:
-                fig_ndx = px.line(
-                    nasdaq,
-                    y="Close",
-                    title="Nasdaq 100 — 2 lata"
-                )
-                fig_ndx.add_scatter(
-                    x=nasdaq.index,
-                    y=nasdaq["Close"].rolling(200).mean(),
-                    mode="lines",
-                    name="SMA200"
-                )
-                fig_ndx.update_layout(
-                    template="plotly_dark",
-                    height=430,
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(15,23,42,0.85)",
-                    font=dict(color="#E2E8F0"),
-                    title_font=dict(size=22),
-                )
-                fig_ndx.update_traces(line=dict(width=3))
-                st.plotly_chart(fig_ndx, use_container_width=True)
+                if isinstance(nasdaq_chart.columns, pd.MultiIndex):
+                    nasdaq_chart.columns = [col[0] for col in nasdaq_chart.columns]
+
+                col_a, col_b = st.columns(2)
+
+                with col_a:
+                    fig_sp = px.line(
+                        sp500_chart,
+                        x="Date",
+                        y="Close",
+                        title="S&P 500 — 2 lata"
+                    )
+
+                    fig_sp.add_scatter(
+                        x=sp500_chart["Date"],
+                        y=sp500_chart["Close"].rolling(200).mean(),
+                        mode="lines",
+                        name="SMA200"
+                    )
+
+                    fig_sp.update_layout(
+                        template="plotly_dark",
+                        height=430,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(15,23,42,0.85)",
+                        font=dict(color="#E2E8F0"),
+                        title_font=dict(size=22),
+                    )
+
+                    fig_sp.update_traces(line=dict(width=3))
+                    st.plotly_chart(fig_sp, use_container_width=True)
+
+                with col_b:
+                    fig_ndx = px.line(
+                        nasdaq_chart,
+                        x="Date",
+                        y="Close",
+                        title="Nasdaq 100 — 2 lata"
+                    )
+
+                    fig_ndx.add_scatter(
+                        x=nasdaq_chart["Date"],
+                        y=nasdaq_chart["Close"].rolling(200).mean(),
+                        mode="lines",
+                        name="SMA200"
+                    )
+
+                    fig_ndx.update_layout(
+                        template="plotly_dark",
+                        height=430,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(15,23,42,0.85)",
+                        font=dict(color="#E2E8F0"),
+                        title_font=dict(size=22),
+                    )
+
+                    fig_ndx.update_traces(line=dict(width=3))
+                    st.plotly_chart(fig_ndx, use_container_width=True)
+
+    with col_b:
+        fig_ndx = px.line(
+            nasdaq_chart,
+            x="Date",
+            y="Close",
+            title="Nasdaq 100 — 2 lata"
+        )
+
+        fig_ndx.add_scatter(
+            x=nasdaq_chart["Date"],
+            y=nasdaq_chart["Close"].rolling(200).mean(),
+            mode="lines",
+            name="SMA200"
+        )
+
+        fig_ndx.update_layout(
+            template="plotly_dark",
+            height=430,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(15,23,42,0.85)",
+            font=dict(color="#E2E8F0"),
+            title_font=dict(size=22),
+        )
+
+        fig_ndx.update_traces(line=dict(width=3))
+        st.plotly_chart(fig_ndx, use_container_width=True)
 
             st.markdown("### 📋 Szczegóły Macro Gate")
             st.dataframe(pd.DataFrame([result]), use_container_width=True)
