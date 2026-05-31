@@ -712,7 +712,7 @@ with tab1:
             with c4:
                 st.metric("Breadth", f"{result['Breadth %']}%")
 
-            st.markdown("### 📈 Wykresy rynku")
+        st.markdown("### 📈 Wykresy rynku")
 
             sp500 = yf.download("^GSPC", period="2y", auto_adjust=True, progress=False)
             nasdaq = yf.download("^NDX", period="2y", auto_adjust=True, progress=False)
@@ -729,6 +729,45 @@ with tab1:
                 if isinstance(nasdaq_chart.columns, pd.MultiIndex):
                     nasdaq_chart.columns = [col[0] for col in nasdaq_chart.columns]
 
+                def perf(df, days):
+                    if len(df) <= days:
+                        return 0
+                    return ((df["Close"].iloc[-1] / df["Close"].iloc[-days]) - 1) * 100
+
+                sp_1m = perf(sp500_chart, 21)
+                sp_3m = perf(sp500_chart, 63)
+                sp_6m = perf(sp500_chart, 126)
+                sp_12m = perf(sp500_chart, 252)
+
+                ndx_1m = perf(nasdaq_chart, 21)
+                ndx_3m = perf(nasdaq_chart, 63)
+                ndx_6m = perf(nasdaq_chart, 126)
+                ndx_12m = perf(nasdaq_chart, 252)
+
+                sp_sma200 = sp500_chart["Close"].rolling(200).mean()
+                ndx_sma200 = nasdaq_chart["Close"].rolling(200).mean()
+
+                sp_vs_sma200 = ((sp500_chart["Close"].iloc[-1] / sp_sma200.iloc[-1]) - 1) * 100
+                ndx_vs_sma200 = ((nasdaq_chart["Close"].iloc[-1] / ndx_sma200.iloc[-1]) - 1) * 100
+
+                st.markdown("#### 🇺🇸 S&P 500 Performance")
+
+                spc1, spc2, spc3, spc4, spc5 = st.columns(5)
+                spc1.metric("1M", f"{sp_1m:.1f}%")
+                spc2.metric("3M", f"{sp_3m:.1f}%")
+                spc3.metric("6M", f"{sp_6m:.1f}%")
+                spc4.metric("12M", f"{sp_12m:.1f}%")
+                spc5.metric("vs SMA200", f"{sp_vs_sma200:.1f}%")
+
+                st.markdown("#### 🚀 Nasdaq 100 Performance")
+
+                ndc1, ndc2, ndc3, ndc4, ndc5 = st.columns(5)
+                ndc1.metric("1M", f"{ndx_1m:.1f}%")
+                ndc2.metric("3M", f"{ndx_3m:.1f}%")
+                ndc3.metric("6M", f"{ndx_6m:.1f}%")
+                ndc4.metric("12M", f"{ndx_12m:.1f}%")
+                ndc5.metric("vs SMA200", f"{ndx_vs_sma200:.1f}%")
+
                 col_a, col_b = st.columns(2)
 
                 with col_a:
@@ -741,7 +780,7 @@ with tab1:
 
                     fig_sp.add_scatter(
                         x=sp500_chart["Date"],
-                        y=sp500_chart["Close"].rolling(200).mean(),
+                        y=sp_sma200,
                         mode="lines",
                         name="SMA200"
                     )
@@ -768,7 +807,7 @@ with tab1:
 
                     fig_ndx.add_scatter(
                         x=nasdaq_chart["Date"],
-                        y=nasdaq_chart["Close"].rolling(200).mean(),
+                        y=ndx_sma200,
                         mode="lines",
                         name="SMA200"
                     )
