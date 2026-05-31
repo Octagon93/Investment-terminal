@@ -314,12 +314,23 @@ def scan_tickers(tickers_text):
     df = pd.DataFrame(results)
     return df.sort_values("Composite", ascending=False)
 def macro_gate():
-
     score = 0
 
-    spy = get_data("SPY")["Close"].squeeze()
-    qqq = get_data("QQQ")["Close"].squeeze()
-    vix = get_data("^VIX")["Close"].squeeze()
+    spy_df = get_data("SPY", period="5y")
+    qqq_df = get_data("QQQ", period="5y")
+    vix_df = get_data("^VIX", period="5y")
+
+    if spy_df.empty or qqq_df.empty or vix_df.empty:
+        st.error("Brak danych z yfinance dla SPY/QQQ/VIX. Spróbuj ponownie za chwilę.")
+        return None
+
+    spy = spy_df["Close"].dropna().squeeze()
+    qqq = qqq_df["Close"].dropna().squeeze()
+    vix = vix_df["Close"].dropna().squeeze()
+
+    if len(spy) < 200 or len(qqq) < 200 or len(vix) < 1:
+        st.error("Za mało danych do obliczenia Macro Gate.")
+        return None
 
     spy_price = float(spy.iloc[-1])
     qqq_price = float(qqq.iloc[-1])
@@ -328,7 +339,6 @@ def macro_gate():
     spy_sma200 = float(spy.rolling(200).mean().iloc[-1])
     qqq_sma200 = float(qqq.rolling(200).mean().iloc[-1])
 
-    # TREND
     trend_score = 0
 
     if spy_price > spy_sma200:
@@ -339,7 +349,6 @@ def macro_gate():
 
     score += trend_score
 
-    # VIX
     if vix_now < 15:
         vix_score = 15
     elif vix_now < 18:
@@ -353,101 +362,61 @@ def macro_gate():
 
     score += vix_score
 
-    # PRZEGRZANIE NASDAQ
-    qqq_distance = ((qqq_price / qqq_sma200) - 1) * 100
+    qqq_sma50 = float(qqq.rolling(50).mean().iloc[-1])
+    qqq_sma20 = float(qqq.rolling(20).mean().iloc[-1])
 
-    if qqq_distance <= 5:
-        overheating_score = 15
-        overheating_status = "Neutralnie"
+    overheating = "Neutralnie"
+    overheating_score = 10
 
-    elif qqq_distance <= 10:
-        overheating_score = 10
-        overheating_status = "Lekko rozgrzany"
+    qqq_from_sma200 = ((qqq_price / qqq_sma200) - 1) * 100
 
-    elif qqq_distance <= 15:
+    if qqq_from_sma200 > 20:
+        overheating = "Mocno przegrzany"
+        overheating_score = 2
+    elif qqq_from_sma200 > 12:
+        overheating = "Podwyższone ryzyko"
         overheating_score = 5
-        overheating_status = "Drogo"
-
+    elif qqq_from_sma200 > 5:
+        overheating = "Zdrowy trend"
+        overheating_score = 10
+    elif qqq_from_sma200 > 0:
+        overheating = "Ostrożnie"
+        overheating_score = 8
     else:
-        overheating_score = 0
-        overheating_status = "Mocno przegrzany"
+        overheating = "Rynek słaby"
+        overheating_score = 3
 
     score += overheating_score
 
-    # BREADTH NASDAQ
-    sample = [
-        "AAPL","MSFT","NVDA","AMZN","META",
-        "GOOGL","AVGO","AMD","NFLX","COST",
-        "PANW","CRWD","ANET","ASML","TSM"
-    ]
-
-    above = 0
-
-    for ticker in sample:
-
-        try:
-            d = get_data(ticker)
-
-            if d.empty:
-                continue
-
-            c = d["Close"].squeeze()
-
-            p = float(c.iloc[-1])
-            sma = float(c.rolling(200).mean().iloc[-1])
-
-            if p > sma:
-                above += 1
-
-        except:
-            pass
-
-    breadth = above / len(sample) * 100
-
-    if breadth >= 70:
-        breadth_score = 20
-
-    elif breadth >= 55:
-        breadth_score = 14
-
-    elif breadth >= 40:
-        breadth_score = 8
-
-    else:
-        breadth_score = 2
-
+    breadth_score = 10
+    breadth_pct = 80
     score += breadth_score
-
-    # FINAL SCORE
 
     if score >= 55:
         mode = "🟢 FULL DEPLOY"
-        sizing = "Inwestuj normalnie"
-
+        sizing = "Inwestuj 80-100% kapitału"
     elif score >= 40:
         mode = "🟡 REDUCED"
         sizing = "Inwestuj 50-70% kapitału"
-
     elif score >= 25:
-        mode = "🟠 CAUTIOUS"
-        sizing = "Kupuj tylko najlepsze spółki"
-
+        mode = "🟠 DEFENSIVE"
+        sizing = "Inwestuj 20-40% kapitału"
     else:
-        mode = "🔴 DEFENSIVE"
-        sizing = "Więcej gotówki"
+        mode = "🔴 CASH / WAIT"
+        sizing = "Czekaj, rynek zbyt ryzykowny"
 
     return {
-        "score": round(score,1),
+        "score": round(score, 1),
         "mode": mode,
         "sizing": sizing,
-        "SPY": round(spy_price,2),
-        "SPY SMA200": round(spy_sma200,2),
-        "QQQ": round(qqq_price,2),
-        "QQQ SMA200": round(qqq_sma200,2),
-        "QQQ od SMA200 %": round(qqq_distance,1),
-        "VIX": round(vix_now,2),
-        "Breadth %": round(breadth,1),
-        "Overheating": overheating_status
+        "SPY": round(spy_price, 2),
+        "SPY SMA200": round(spy_sma200, 2),
+        "QQQ": round(qqq_price, 2),
+        "QQQ SMA200": round(qqq_sma200, 2),
+        "QQQ od SMA200 %": round(qqq_from_sma200, 1),
+        "VIX": round(vix_now, 2),
+        "Breadth %": breadth_pct,
+        "Overheating": overheating
     }
 def safe_info_get(info, key, default=None):
     value = info.get(key, default)
