@@ -980,6 +980,18 @@ with tab7:
                 how="left"
             )
 
+            numeric_cols = [
+                "Quality Score",
+                "Composite",
+                "Upside/Downside %",
+                "RSI",
+                "Od ATH %"
+            ]
+
+            for col in numeric_cols:
+                if col in merged.columns:
+                    merged[col] = pd.to_numeric(merged[col], errors="coerce").fillna(0)
+
             merged["Final Score"] = (
                 merged["Quality Score"] * 0.60 +
                 merged["Composite"] * 0.25 +
@@ -1013,3 +1025,5 @@ with tab7:
             Najpierw wybierałbym spółki z wysokim Quality Score, dodatnim potencjałem do Fair Value
             i sensownym Composite Score.
             """)
+        else:
+            st.error("Nie udało się pobrać kompletnych danych do AI Advisor.")
