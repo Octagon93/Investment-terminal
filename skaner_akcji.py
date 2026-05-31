@@ -702,12 +702,15 @@ with tab1:
 
             with c1:
                 st.metric("SPY", result["SPY"], f"SMA200: {result['SPY SMA200']}")
+
             with c2:
                 st.metric("QQQ", result["QQQ"], f"SMA200: {result['QQQ SMA200']}")
+
             with c3:
                 st.metric("VIX", result["VIX"])
+
             with c4:
-            st.metric("Breadth", f"{result['Breadth %']}%")
+                st.metric("Breadth", f"{result['Breadth %']}%")
 
             st.markdown("### 📈 Wykresy rynku")
 
@@ -781,33 +784,6 @@ with tab1:
 
                     fig_ndx.update_traces(line=dict(width=3))
                     st.plotly_chart(fig_ndx, use_container_width=True)
-
-    with col_b:
-        fig_ndx = px.line(
-            nasdaq_chart,
-            x="Date",
-            y="Close",
-            title="Nasdaq 100 — 2 lata"
-        )
-
-        fig_ndx.add_scatter(
-            x=nasdaq_chart["Date"],
-            y=nasdaq_chart["Close"].rolling(200).mean(),
-            mode="lines",
-            name="SMA200"
-        )
-
-        fig_ndx.update_layout(
-            template="plotly_dark",
-            height=430,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(15,23,42,0.85)",
-            font=dict(color="#E2E8F0"),
-            title_font=dict(size=22),
-        )
-
-        fig_ndx.update_traces(line=dict(width=3))
-        st.plotly_chart(fig_ndx, use_container_width=True)
 
             st.markdown("### 📋 Szczegóły Macro Gate")
             st.dataframe(pd.DataFrame([result]), use_container_width=True)
