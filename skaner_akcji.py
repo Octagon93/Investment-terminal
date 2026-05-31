@@ -712,7 +712,7 @@ with tab1:
             with c4:
                 st.metric("Breadth", f"{result['Breadth %']}%")
 
-        st.markdown("### 📈 Wykresy rynku")
+            st.markdown("### 📈 Wykresy rynku")
 
             sp500 = yf.download("^GSPC", period="2y", auto_adjust=True, progress=False)
             nasdaq = yf.download("^NDX", period="2y", auto_adjust=True, progress=False)
