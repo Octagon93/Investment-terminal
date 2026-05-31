@@ -700,15 +700,101 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 with tab1:
     st.header("📊 Macro Deployment Gate")
 
-    if st.button("Sprawdź rynek"):
+    if st.button("🚀 Sprawdź rynek PRO"):
         result = macro_gate()
 
         if result:
-            st.metric("Wynik rynku", result["score"])
-            st.subheader(result["mode"])
-            st.write(result["sizing"])
+            score = result["score"]
 
+            if score >= 55:
+                gate_color = "🟢"
+            elif score >= 40:
+                gate_color = "🟡"
+            elif score >= 25:
+                gate_color = "🟠"
+            else:
+                gate_color = "🔴"
+
+            st.markdown(f"""
+            <div class="terminal-card green-card">
+                <h2>{gate_color} {result["mode"]}</h2>
+                <p class="subtitle">Aktualny tryb inwestowania</p>
+                <div style="font-size:54px;font-weight:900;color:#22C55E;">
+                    {score}/70
+                </div>
+                <p style="font-size:20px;font-weight:800;">
+                    {result["sizing"]}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            c1, c2, c3, c4 = st.columns(4)
+
+            with c1:
+                st.metric("SPY", result["SPY"], f"SMA200: {result['SPY SMA200']}")
+            with c2:
+                st.metric("QQQ", result["QQQ"], f"SMA200: {result['QQQ SMA200']}")
+            with c3:
+                st.metric("VIX", result["VIX"])
+            with c4:
+                st.metric("Breadth", f"{result['Breadth %']}%")
+
+            st.markdown("### 📈 Wykresy rynku")
+
+            sp500 = yf.download("^GSPC", period="2y", auto_adjust=True, progress=False)
+            nasdaq = yf.download("^NDX", period="2y", auto_adjust=True, progress=False)
+
+            col_a, col_b = st.columns(2)
+
+            with col_a:
+                fig_sp = px.line(
+                    sp500,
+                    y="Close",
+                    title="S&P 500 — 2 lata"
+                )
+                fig_sp.add_scatter(
+                    x=sp500.index,
+                    y=sp500["Close"].rolling(200).mean(),
+                    mode="lines",
+                    name="SMA200"
+                )
+                fig_sp.update_layout(
+                    template="plotly_dark",
+                    height=430,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(15,23,42,0.85)",
+                    font=dict(color="#E2E8F0"),
+                    title_font=dict(size=22),
+                )
+                fig_sp.update_traces(line=dict(width=3))
+                st.plotly_chart(fig_sp, use_container_width=True)
+
+            with col_b:
+                fig_ndx = px.line(
+                    nasdaq,
+                    y="Close",
+                    title="Nasdaq 100 — 2 lata"
+                )
+                fig_ndx.add_scatter(
+                    x=nasdaq.index,
+                    y=nasdaq["Close"].rolling(200).mean(),
+                    mode="lines",
+                    name="SMA200"
+                )
+                fig_ndx.update_layout(
+                    template="plotly_dark",
+                    height=430,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(15,23,42,0.85)",
+                    font=dict(color="#E2E8F0"),
+                    title_font=dict(size=22),
+                )
+                fig_ndx.update_traces(line=dict(width=3))
+                st.plotly_chart(fig_ndx, use_container_width=True)
+
+            st.markdown("### 📋 Szczegóły Macro Gate")
             st.dataframe(pd.DataFrame([result]), use_container_width=True)
+
         else:
             st.error("Nie udało się pobrać danych makro.")
 
